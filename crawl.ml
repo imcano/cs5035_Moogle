@@ -56,6 +56,19 @@ let print s =
 (*    PART 1: CRAWLER                                                  *)
 (***********************************************************************)
 
+(*Use crawlerservices.get_page to get a link from a page then deconstruct it and send in words for this function *)
+update_dict (words:string list) (link:link) (dict: wordDict.dict) : WordDict.dict =
+  match words with
+    | [] -> d 
+    | word :: tl ->
+      (*Look up the word in the dictionary *)
+      match WordDict.lookup dict word with
+        (*No match found in the dictionary add the link as the only value for that key*)
+        | None -> update_dict tl link (WordDict.insert dict word (LinkSet.singleton link) 
+        (*Match is found in the dictionary insert that link into the set of links *)
+        | Some s -> update_dict tl l (WordDict.insert d word (LinkSet.insert link s))
+;;
+
 (* TODO: Build an index as follows:
  * 
  * Remove a link from the frontier (the set of links that have yet to
@@ -67,7 +80,11 @@ let print s =
  * reached the maximum number of links (n) or the frontier is empty. *)
 let rec crawl (n:int) (frontier: LinkSet.set)
     (visited : LinkSet.set) (d:WordDict.dict) : WordDict.dict = 
-  WordDict.empty
+    (* if n = 0 then d
+    else 
+      match frontier with
+        | None -> d
+        |  *)
 ;;
 
 let crawler () = 
