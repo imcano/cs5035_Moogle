@@ -57,17 +57,31 @@ let print s =
 (***********************************************************************)
 
 (*Use crawlerservices.get_page to get a link from a page then deconstruct it and send in words for this function *)
-update_dict (words:string list) (link:link) (dict: wordDict.dict) : WordDict.dict =
+let rec update_dict (words:string list) (link:link) (dict:WordDict.dict) : WordDict.dict =
   match words with
-    | [] -> d 
+    | [] -> dict
     | word :: tl ->
       (*Look up the word in the dictionary *)
       match WordDict.lookup dict word with
         (*No match found in the dictionary add the link as the only value for that key*)
-        | None -> update_dict tl link (WordDict.insert dict word (LinkSet.singleton link) 
+        | None -> update_dict tl link (WordDict.insert dict word (LinkSet.singleton link))
         (*Match is found in the dictionary insert that link into the set of links *)
-        | Some s -> update_dict tl l (WordDict.insert d word (LinkSet.insert link s))
+        | Some s -> update_dict tl link (WordDict.insert dict word (LinkSet.insert link s))
 ;;
+
+let rec update_frontier (links:link list) (frontier:LinkSet.set) : LinkSet.set =
+  match links with
+    | [] -> frontier
+    | singleLink:: tl ->
+      (*Look up the word in the dictionary *)
+      match LinkSet.member frontier singleLink with
+        (*No match found in the dictionary add the link as the only value for that key*)
+        | false -> update_frontier tl (LinkSet.insert frontier singleLink)
+        (*Match is found in the dictionary insert that link into the set of links *)
+        | true-> update_frontier tl frontier
+;;
+
+
 
 (* TODO: Build an index as follows:
  * 
@@ -80,11 +94,18 @@ update_dict (words:string list) (link:link) (dict: wordDict.dict) : WordDict.dic
  * reached the maximum number of links (n) or the frontier is empty. *)
 let rec crawl (n:int) (frontier: LinkSet.set)
     (visited : LinkSet.set) (d:WordDict.dict) : WordDict.dict = 
-    (* if n = 0 then d
+    (if n = 0 then d
     else 
       match frontier with
         | None -> d
-        |  *)
+        |  head::tail -> if  ListSet.member visited head  then
+        crawl n tail  visited d else 
+        crawl 
+         (n-1) 
+         update_frontier (CrawlerServices.get_links  head)  frontier
+         (ListSet.insert head visited) 
+         (update_dict (CrawlerServices.get_page head) head d) )
+
 ;;
 
 let crawler () = 
