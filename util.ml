@@ -242,7 +242,7 @@ module CrawlerServices : CRAWLER_SERVICES =
             Not_found -> List.rev links
       in
         loop 0 []
-
+        
     (* get_words returns a list of words that occur on the page.
      * For our purposes, words only contain alphabetic characters.
      * If we try to use regexps here, we'll get a stack overflow,

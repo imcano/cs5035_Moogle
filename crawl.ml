@@ -76,7 +76,7 @@ let rec update_frontier (links:link list) (frontier:LinkSet.set) : LinkSet.set =
       (*Look up the word in the dictionary *)
       match LinkSet.member frontier singleLink with
         (*No match found in the dictionary add the link as the only value for that key*)
-        | false -> update_frontier tl (LinkSet.insert frontier singleLink)
+        | false -> update_frontier tl (LinkSet.insert singleLink frontier)            
         (*Match is found in the dictionary insert that link into the set of links *)
         | true-> update_frontier tl frontier
 ;;
@@ -96,15 +96,20 @@ let rec crawl (n:int) (frontier: LinkSet.set)
     (visited : LinkSet.set) (d:WordDict.dict) : WordDict.dict = 
     (if n = 0 then d
     else 
-      match frontier with
-        | None -> d
-        |  head::tail -> if  ListSet.member visited head  then
+      let x = LinkSet.choose frontier  in
+      match x with
+        |None-> d
+        |Some (head,tail) -> if  LinkSet.member visited head  then
         crawl n tail  visited d else 
-        crawl 
-         (n-1) 
-         update_frontier (CrawlerServices.get_links  head)  frontier
-         (ListSet.insert head visited) 
-         (update_dict (CrawlerServices.get_page head) head d) )
+        let page = CrawlerServices.get_page head in
+          match page with 
+           |None ->   crawl n tail  visited d
+           | Some link ->
+              crawl 
+              (n-1) 
+              (update_frontier (link.links)  frontier)
+              (LinkSet.insert head visited) 
+              (update_dict (link.words) head d ))
 
 ;;
 

@@ -226,16 +226,69 @@ end
 (* DictSet: a functor that creates a SET by calling our           *)
 (* Dict.Make functor                                              *)
 (******************************************************************)
-(*
+
+
 module DictSet(C : COMPARABLE) : (SET with type elt = C.t) = 
 struct
   module D = Dict.Make(struct
-      ??? fill this in!
+    type key = C.t
+    type value = float
   end)
 
   type elt = D.key
   type set = D.dict
-  let empty = ???
+
+
+  let empty = Dict.empty
+
+  let is_empty dect = 
+    if dect = Dict.empty then true else false
+
+  let singleton (x,y) = D.insert D.empty x y
+  let rec insert x xs = 
+    match xs with 
+      | [] -> [x]
+      | y::ys -> (match C.compare x y with 
+          | Greater -> y::(insert x ys)
+          | Eq -> xs
+          | Less -> x::xs)
+
+  let union xs ys = List.fold_right insert xs ys
+  let rec remove y xs = 
+    match xs with 
+      | [] -> []
+      | x::xs1 -> (match C.compare y x with 
+          | Eq -> xs1
+          | Less -> xs
+          | Greater -> x::(remove y xs1))
+
+  let rec intersect xs ys = 
+    match xs, ys with 
+      | [], _ -> []
+      | _, [] -> []
+      | xh::xt, yh::yt -> (match C.compare xh yh with 
+          | Eq -> xh::(intersect xt yt)
+          | Less -> intersect xt ys
+          | Greater -> intersect xs yt)
+
+  let rec member xs x = 
+    match xs with 
+      | [] -> false
+      | y::ys -> (match C.compare x y with
+          | Eq -> true
+          | Greater -> member ys x
+          | Less -> false)
+
+  let choose xs = 
+    match xs with 
+      | [] -> None
+      | x::rest -> Some (x,rest)
+  let fold f e = List.fold_left (fun a x -> f x a) e 
+    
+  let string_of_elt = C.string_of_t
+  let string_of_set (s: set) : string = 
+    let f = (fun y e -> y ^ "; " ^ C.string_of_t e) in
+    "set([" ^ (List.fold_left f "" s) ^ "])"
 
   (* implement the rest of the functions in the signature! *)
 
@@ -253,9 +306,7 @@ struct
   let run_tests () = 
     ()
 end
-*)
-
-
+;;
 
 (******************************************************************)
 (* Run our tests.                                                 *)
