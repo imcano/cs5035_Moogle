@@ -197,9 +197,9 @@ struct
 
     assert (List.length (G.nodes G.empty) = 0) ;
     assert (List.length (G.nodes (G.add_node G.empty "a")) = 1) ;
-
+    
     assert (List.length (G.nodes g) = 2) ;
-
+    
     assert (List.length (G.nodes g2) = 3) ;
 
     assert (deopt_len (G.outgoing_edges g2 "a") = 2) ;

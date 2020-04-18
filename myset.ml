@@ -227,70 +227,55 @@ end
 (* Dict.Make functor                                              *)
 (******************************************************************)
 
-
 module DictSet(C : COMPARABLE) : (SET with type elt = C.t) = 
 struct
   module D = Dict.Make(struct
     type key = C.t
-    type value = float
+    type value = string
+    let compare = C.compare
+    let string_of_key = C.string_of_t
+    let string_of_value value = ""
+
+    (* These functions are for testing purposes *)
+    let gen_key () = C.gen()
+    let gen_key_gt x () = gen_key ()
+    let gen_key_lt x () = gen_key ()
+    let gen_key_random () = gen_key ()
+    let gen_key_between x y () = C.gen_between x y ()
+    let gen_value () = "" 
+    let gen_pair () = (gen_key(),gen_value())
   end)
 
   type elt = D.key
   type set = D.dict
-
-
-  let empty = Dict.empty
-
-  let is_empty dect = 
-    if dect = Dict.empty then true else false
-
-  let singleton (x,y) = D.insert D.empty x y
-  let rec insert x xs = 
-    match xs with 
-      | [] -> [x]
-      | y::ys -> (match C.compare x y with 
-          | Greater -> y::(insert x ys)
-          | Eq -> xs
-          | Less -> x::xs)
-
-  let union xs ys = List.fold_right insert xs ys
-  let rec remove y xs = 
-    match xs with 
-      | [] -> []
-      | x::xs1 -> (match C.compare y x with 
-          | Eq -> xs1
-          | Less -> xs
-          | Greater -> x::(remove y xs1))
-
-  let rec intersect xs ys = 
-    match xs, ys with 
-      | [], _ -> []
-      | _, [] -> []
-      | xh::xt, yh::yt -> (match C.compare xh yh with 
-          | Eq -> xh::(intersect xt yt)
-          | Less -> intersect xt ys
-          | Greater -> intersect xs yt)
-
-  let rec member xs x = 
-    match xs with 
-      | [] -> false
-      | y::ys -> (match C.compare x y with
-          | Eq -> true
-          | Greater -> member ys x
-          | Less -> false)
-
-  let choose xs = 
-    match xs with 
-      | [] -> None
-      | x::rest -> Some (x,rest)
-  let fold f e = List.fold_left (fun a x -> f x a) e 
-    
-  let string_of_elt = C.string_of_t
-  let string_of_set (s: set) : string = 
-    let f = (fun y e -> y ^ "; " ^ C.string_of_t e) in
-    "set([" ^ (List.fold_left f "" s) ^ "])"
+  let empty = D.empty
 
   (* implement the rest of the functions in the signature! *)
+  let is_empty ds =
+    match D.choose ds with
+      | None -> true
+      | Some _ -> false 
+
+  let singleton x = D.insert D.empty x ""
+
+  let insert x xs = D.insert xs x ""
+
+  let union xs ys = D.fold (fun k _ ys' -> D.insert ys' k "") xs ys
+
+  let remove y xs = D.remove xs y
+
+  let intersect xs ys =
+    D.fold (fun k _ zs -> if D.member ys k then D.insert zs k ""
+                          else zs) D.empty xs
+
+  let member xs x = D.member xs x
+
+  let choose xs = 
+    match D.choose xs with 
+      | None -> None
+      | Some (x, v, rest) -> Some (x,rest)
+
+  let fold f e = D.fold (fun k _ xs  -> f k xs) e
 
   let string_of_elt = D.string_of_key
   let string_of_set s = D.string_of_dict s
@@ -301,29 +286,93 @@ struct
   (* write tests. However, you must write a lot more              *)
   (* comprehensive tests to test ALL your functions.              *)
   (****************************************************************)
+  let insert_list (d: set) (lst: elt list) : set = 
+    List.fold_left (fun r k -> insert k r) d lst
+
+  let rec generate_random_list (size: int) : elt list =
+    if size <= 0 then []
+    else (C.gen_random()) :: (generate_random_list (size - 1))
+
+  let test_insert () =
+    let elts = generate_random_list 100 in
+    let s1 = insert_list empty elts in
+    List.iter (fun k -> assert(member s1 k)) elts ;
+    ()
+
+  let test_remove () =
+    let elts = generate_random_list 100 in
+    let s1 = insert_list empty elts in
+    let s2 = List.fold_right (fun k r -> remove k r) elts s1 in
+    List.iter (fun k -> assert(not (member s2 k))) elts ;
+    ()
+
+  let test_union () = 
+    let elts1 = generate_random_list 100 in
+    let s1 = insert_list empty elts1 in
+    let elts2 = generate_random_list 100 in
+    let s2 = insert_list empty elts2 in
+    let s3 = insert_list s1 elts2 in
+    assert(s3 = (union s1 s2)); 
+    ()
+
+   let test_intersect () =
+    (*let zero = C.gen in
+    let neg_one = C.gen_lt zero ()
+    let s1 = insert_list empty elts1 in
+    let elts2 = [] in
+    let s2 = insert_list empty elts2 in
+    assert((insert empty 3) = intersect(s1, s2));*)
+    ()
+
+  let test_member () =
+    ()
+
+  let test_choose () =
+    ()
+
+  let test_fold () =
+    ()
+
+  let test_is_empty () =
+    ()
+
+  let test_singleton () =
+    ()
+
+  let run_tests () = 
+    test_insert () ;
+    test_remove () ;
+    test_union () ;
+    test_intersect () ;
+    test_member () ;
+    test_choose () ;
+    test_fold () ;
+    test_is_empty () ;
+    test_singleton () ;
+    ()
 
   (* add your test functions to run_tests *)
-  let run_tests () = 
-    ()
 end
-;;
+
+
+
 
 (******************************************************************)
 (* Run our tests.                                                 *)
 (******************************************************************)
 
 (* Create a set of ints using our ListSet functor. *)
-module IntListSet = ListSet(IntComparable) ;;
-IntListSet.run_tests();;
+(* module IntListSet = ListSet(IntComparable) ;;
+IntListSet.run_tests();; *)
 
 (* Create a set of ints using our DictSet functor
  * 
  * Uncomment out the lines below when you are ready to test your
  * 2-3 dict set implementation *)
-(*
+
 module IntDictSet = DictSet(IntComparable) ;;
 IntDictSet.run_tests();;
-*)
+
 
 
 (******************************************************************)
@@ -333,6 +382,6 @@ IntDictSet.run_tests();;
 module Make(C : COMPARABLE) : (SET with type elt = C.t) = 
   (* Change this line to use our dictionary implementation when your are 
    * finished. *)
-  ListSet (C)
-  (* DictSet (C) *)
+  (* ListSet (C) *)
+  DictSet (C)
 
