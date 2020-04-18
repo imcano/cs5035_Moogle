@@ -286,13 +286,25 @@ struct
   (* write tests. However, you must write a lot more              *)
   (* comprehensive tests to test ALL your functions.              *)
   (****************************************************************)
+
   let insert_list (d: set) (lst: elt list) : set = 
     List.fold_left (fun r k -> insert k r) d lst
+
+  let rec increment_key (k: C.t) (n: int) : C.t = 
+    if n <= 0 then k
+    else increment_key (C.gen_gt k ()) (n-1) 
+
+  let rec generate_range_list' (stop: int) (n: int) (k: C.t) : elt list =
+    if n >= stop then []
+    else (increment_key (C.gen()) n) :: (generate_range_list' stop (n+1) k)
+
+  let rec generate_range_list (stop:int) : elt list =
+    generate_range_list' stop 0 (C.gen())
 
   let rec generate_random_list (size: int) : elt list =
     if size <= 0 then []
     else (C.gen_random()) :: (generate_random_list (size - 1))
-
+  
   let test_insert () =
     let elts = generate_random_list 100 in
     let s1 = insert_list empty elts in
@@ -306,37 +318,54 @@ struct
     List.iter (fun k -> assert(not (member s2 k))) elts ;
     ()
 
-  let test_union () = 
+  let test_union () =
     let elts1 = generate_random_list 100 in
     let s1 = insert_list empty elts1 in
     let elts2 = generate_random_list 100 in
     let s2 = insert_list empty elts2 in
     let s3 = insert_list s1 elts2 in
-    assert(s3 = (union s1 s2)); 
+    assert(s3 = (union s1 s2));
     ()
 
-   let test_intersect () =
-    (*let zero = C.gen in
-    let neg_one = C.gen_lt zero ()
+  let test_intersect () =
+    let elts1 = generate_range_list 10 in
     let s1 = insert_list empty elts1 in
-    let elts2 = [] in
+    let elts2 = generate_range_list 5 in 
     let s2 = insert_list empty elts2 in
-    assert((insert empty 3) = intersect(s1, s2));*)
+    assert(s2 = intersect s1 s2);
     ()
 
   let test_member () =
+    let elts = generate_range_list 3 in 
+    let s = insert_list empty elts in
+    assert(member s (C.gen()) = true);
     ()
 
   let test_choose () =
+    let elts = generate_range_list 10 in
+    let s = insert_list empty elts in
+    match choose s with
+      | None -> assert(is_empty s);
+      | Some (k,s') -> assert(not (member s' k));
     ()
 
   let test_fold () =
+    let elts = generate_range_list 5 in 
+    let s = insert_list empty elts in
+    assert(fold (fun _ i -> i+1) 0 s = 5);
+    assert(fold (fun k i -> i ^ (string_of_elt k)) "" s = "01234");
     ()
 
   let test_is_empty () =
+    let elts = generate_range_list 0 in
+    let s = insert_list empty elts in
+    assert(is_empty s = true);
     ()
 
   let test_singleton () =
+    let elts = generate_range_list 1 in
+    let s = insert_list empty elts in
+    assert(singleton (C.gen()) = s);
     ()
 
   let run_tests () = 
@@ -350,8 +379,6 @@ struct
     test_is_empty () ;
     test_singleton () ;
     ()
-
-  (* add your test functions to run_tests *)
 end
 
 
