@@ -529,7 +529,8 @@ struct
         |Up (dict1,(k2,v2),dict2) -> 
           insert_upward_two (k2,v2) dict1 dict2 (k1,v1) right
         |Done dictD -> Done (Two (dictD,(k1,v1),right)) )
-      |Eq|Greater -> (match  insert_downward right k v with 
+      |Eq -> Done(Two(left,(k,v),right))
+      |Greater -> (match  insert_downward right k v with 
         |Up (dict1,(k2,v2),dict2) ->
           insert_upward_two (k2,v2) dict1 dict2 (k1,v1) left
         |Done dictD -> Done (Two (left,(k1,v1),dictD)) )
@@ -544,12 +545,14 @@ struct
           |Up(dict1, (key1,value1),dict2) -> 
             insert_upward_three (key1,value1) dict1 dict2 (k1,v1) (k2,v2) middle right
           |Done dictD -> Done (Three (dictD,(k1,v1),middle,(k2,v2),right)))
-        |Eq|Greater-> (match D.compare k k2 with 
+        |Eq -> Done(Three(left, (k,v), middle, (k2,v2), right))
+        |Greater-> (match D.compare k k2 with 
           |Less -> (match insert_downward middle k v with 
             |Up(dict1, (key1,value1),dict2) -> 
               insert_upward_three (key1,value1) dict1 dict2 (k1,v1) (k2,v2) left right
             |Done dictD -> Done (Three (left,(k1,v1),dictD,(k2,v2),right)))
-          |Eq|Greater-> (match insert_downward right k v with 
+          |Eq -> Done(Three(left, (k1,v1), middle, (k,v), right))
+          |Greater-> (match insert_downward right k v with 
             |Up(dict1, (key1,value1),dict2) -> 
               insert_upward_three (key1,value1) dict1 dict2 (k1,v1) (k2,v2) left middle
             |Done dictD -> Done (Three (left,(k1,v1),middle,(k2,v2),dictD)))
@@ -1038,6 +1041,6 @@ module Make (D:DICT_ARG) : (DICT with type key = D.key
   with type value = D.value) = 
   (* Change this line to the BTDict implementation when you are
    * done implementing your 2-3 trees. *)
-  AssocListDict(D)
-  (*BTDict(D) *) 
+  (* AssocListDict(D) *)
+  BTDict(D) 
 
