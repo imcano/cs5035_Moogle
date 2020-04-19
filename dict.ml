@@ -370,6 +370,10 @@ struct
   let empty : dict = Leaf
 
   (* TODO:
+   * If our dictionary is the (key,value) pairs (in any order)
+   *      (k1,v1), (k2,v2), (k3,v3), ... (kn,vn)
+   * then fold should return:
+   *      f k1 v1 (f k2 v2 (f k3 v3 (f ... (f kn vn u))))
    * Implement fold. Read the specification in the DICT signature above. *)
   let rec fold (f: key -> value -> 'a -> 'a) (u: 'a) (d: dict) : 'a =
     match d with 
@@ -381,8 +385,9 @@ struct
     |Three (dict1, (k1,v1),dict2,(k2,v2),dict3) ->
       let acc1 = fold f u dict1 in 
         let acc2 = fold f acc1 dict2 in 
-          let acc3 = fold f acc2 dict3 in 
-            f k1 v2 acc3
+          let acc3 =  f k2 v2 acc2 in
+            let acc4 = fold f acc3 dict3 in
+              f k1 v1 acc4
 
   (* TODO:
    * Implement these to-string functions
@@ -393,7 +398,7 @@ struct
   let string_of_key = D.string_of_key
   let string_of_value = D.string_of_value
   let string_of_dict (d: dict) : string = 
-  fold (fun key value dict->(string_of_key key)^(string_of_value value)) "" d
+  fold (fun key value u->u^"Key:"^(string_of_key key)^";Value:"^(string_of_value value)^"|") "" d
       
   (* Debugging function. This will print out the tree in text format.
    * Use this function to see the actual structure of your 2-3 tree. *
@@ -906,7 +911,18 @@ let rec balanced (d: dict) : bool =
                 let sTwo = Two(Leaf,(key2,value2),Leaf) in
                   let answer = Two( fTwo,(key3,value3),sTwo) in
               assert( (checked = answer  && balanced(checked)));
-  
+    
+    (*
+    let d4 = Leaf in 
+      let zero = D.gen_key () in
+        let one = D.gen_key_gt zero () in
+          let checked = (insert d4 zero (D.gen_value ())) in
+            let checked2 = insert checked one (D.gen_value ())  in
+              let checked3 = insert checked2 (D.gen_key_gt one ()) (D.gen_value ()) in
+                let checked4 = insert checked3 zero (D.gen_value ()) in
+                  print_string (string_of_dict checked4);
+  *)
+
   ()
   let test_choose_ours () =
     let d1 = Leaf in
@@ -981,6 +997,7 @@ let rec balanced (d: dict) : bool =
     test_balanced() ;
     test_lookup_ours();
     test_member_ours();
+    test_insert_ours();
     test_remove_nothing() ;
     test_remove_from_nothing() ;
     test_remove_in_order() ;
@@ -1021,6 +1038,6 @@ module Make (D:DICT_ARG) : (DICT with type key = D.key
   with type value = D.value) = 
   (* Change this line to the BTDict implementation when you are
    * done implementing your 2-3 trees. *)
-  (*AssocListDict(D)*)
-  BTDict(D) 
+  AssocListDict(D)
+  (*BTDict(D) *) 
 
