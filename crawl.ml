@@ -6,14 +6,14 @@ open Pagerank ;;
 
 (* RandomWalkRanker and QuantumRanker are for karma questions only *)
 module MoogleRanker
-  = InDegreeRanker (PageGraph) (PageScore)
-  (*
-     = RandomWalkRanker (PageGraph) (PageScore) (struct 
-       let do_random_jumps = Some 0.20
-       let num_steps = 1000
-     end)
-  *)
-  (*  
+  (* = InDegreeRanker (PageGraph) (PageScore) *)
+
+  = RandomWalkRanker (PageGraph) (PageScore) (struct 
+    let do_random_jumps = Some 0.20
+    let num_steps = 1000
+  end)
+
+(*  
    = QuantumRanker (PageGraph) (PageScore) (struct 
        let alpha = 0.01
        let num_steps = 1
@@ -59,26 +59,26 @@ let print s =
 (*Use crawlerservices.get_page to get a link from a page then deconstruct it and send in words for this function *)
 let rec update_dict (words:string list) (link:link) (dict:WordDict.dict) : WordDict.dict =
   match words with
-    | [] -> dict
-    | word :: tl ->
-      (*Look up the word in the dictionary *)
-      match WordDict.lookup dict word with
-        (*No match found in the dictionary add the link as the only value for that key*)
-        | None -> update_dict tl link (WordDict.insert dict word (LinkSet.singleton link))
-        (*Match is found in the dictionary insert that link into the set of links *)
-        | Some s -> update_dict tl link (WordDict.insert dict word (LinkSet.insert link s))
+  | [] -> dict
+  | word :: tl ->
+    (*Look up the word in the dictionary *)
+    match WordDict.lookup dict word with
+    (*No match found in the dictionary add the link as the only value for that key*)
+    | None -> update_dict tl link (WordDict.insert dict word (LinkSet.singleton link))
+    (*Match is found in the dictionary insert that link into the set of links *)
+    | Some s -> update_dict tl link (WordDict.insert dict word (LinkSet.insert link s))
 ;;
 
 let rec update_frontier (links:link list) (frontier:LinkSet.set) : LinkSet.set =
   match links with
-    | [] -> frontier
-    | singleLink:: tl ->
-      (*Look up the word in the dictionary *)
-      match LinkSet.member frontier singleLink with
-        (*No match found in the dictionary add the link as the only value for that key*)
-        | false -> update_frontier tl (LinkSet.insert singleLink frontier)            
-        (*Match is found in the dictionary insert that link into the set of links *)
-        | true-> update_frontier tl frontier
+  | [] -> frontier
+  | singleLink:: tl ->
+    (*Look up the word in the dictionary *)
+    match LinkSet.member frontier singleLink with
+    (*No match found in the dictionary add the link as the only value for that key*)
+    | false -> update_frontier tl (LinkSet.insert singleLink frontier)            
+    (*Match is found in the dictionary insert that link into the set of links *)
+    | true-> update_frontier tl frontier
 ;;
 
 
@@ -94,22 +94,22 @@ let rec update_frontier (links:link list) (frontier:LinkSet.set) : LinkSet.set =
  * reached the maximum number of links (n) or the frontier is empty. *)
 let rec crawl (n:int) (frontier: LinkSet.set)
     (visited : LinkSet.set) (d:WordDict.dict) : WordDict.dict = 
-    (if n = 0 then d
-    else 
-      let x = LinkSet.choose frontier  in
-      match x with
-        |None-> d
-        |Some (head,tail) -> if  LinkSet.member visited head  then
-        crawl n tail  visited d else 
-        let page = CrawlerServices.get_page head in
-          match page with 
-           |None ->   crawl n tail  visited d
-           | Some link ->
-              crawl 
-              (n-1) 
-              (update_frontier (link.links)  frontier)
-              (LinkSet.insert head visited) 
-              (update_dict (link.words) head d ))
+  (if n = 0 then d
+   else 
+     let x = LinkSet.choose frontier  in
+     match x with
+     |None-> d
+     |Some (head,tail) -> if  LinkSet.member visited head  then
+         crawl n tail  visited d else 
+         let page = CrawlerServices.get_page head in
+         match page with 
+         |None ->   crawl n tail  visited d
+         | Some link ->
+           crawl 
+             (n-1) 
+             (update_frontier (link.links)  frontier)
+             (LinkSet.insert head visited) 
+             (update_dict (link.words) head d ))
 
 ;;
 

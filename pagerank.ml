@@ -136,23 +136,40 @@ struct
   module G = GA
   module NS = NSA
 
+  exception NO_MAMA
   exception NO_NODES
 
   let rank (g: G.graph) : (NS.node_score_map) =
-    let rng (nodes: G.node list) : (G.node) = 
+    let rec rng (nodes: G.node list) : (G.node option) = 
       match nodes with
-      | [] -> raise NO_NODES
-      | _ -> List.nth nodes (Random.int (List.length nodes))
+      | [] -> None
+      | _ -> Some (List.nth nodes (Random.int (List.length nodes)))
     in
-    let rec walk (m: int) (node: G.node) (ranks: NS.node_score_map) 
+    let rand_jump (node: G.node option) (alpha: float option) : G.node option =
+      match alpha with
+      | None -> node
+      | Some a -> (
+          let jump_prob = Random.float 1.0
+          in
+          if jump_prob <= a then (G.get_random_node g)
+          else node
+        )
+    in
+    let rec walk (m: int) (node: G.node option) (ranks: NS.node_score_map) 
       : (NS.node_score_map) =
       if m = 0 then ranks
       else (
-        match G.neighbors g node with  
-        | None -> walk (m-1) (rng (G.nodes g)) (NS.add_score ranks node 1.0) 
-        | Some neighbors -> walk (m-1) (rng neighbors) (NS.add_score ranks node 1.0)
+        let node = rand_jump node P.do_random_jumps
+        in
+        match node with
+        | None -> walk (m-1) (rng (G.nodes g)) ranks
+        | Some node -> 
+          match G.neighbors g node with  
+          | None -> walk (m-1) (rng (G.nodes g)) (NS.add_score ranks node 1.0) 
+          | Some neighbors -> walk (m-1) (rng neighbors) (NS.add_score ranks node 1.0)
       )
-    in walk P.num_steps (rng (G.nodes g)) (NS.zero_node_score_map (G.nodes g))
+    in
+    walk P.num_steps (G.get_random_node g) (NS.zero_node_score_map (G.nodes g))
 
   (* TODO - fill this in *)
 end
@@ -218,7 +235,6 @@ struct
 
 end
 
-(*
 module TestRandomWalkRanker =
 struct 
   module G = NamedGraph
@@ -231,25 +247,27 @@ struct
                         ("g","a")]
 
   module NS = NodeScore (struct
-                           type node = string 
-                           let compare = string_compare
-                           let string_of_node = fun x -> x
-                           let gen () = ""
-                         end);;
+      type node = string 
+      let compare = string_compare
+      let string_of_node = fun x -> x
+      let gen () = ""
+    end);;
 
   module Ranker = RandomWalkRanker (G) (NS) 
-    (struct 
-       let do_random_jumps = None
-       let num_steps = 1000
-     end)
+      (struct 
+        let do_random_jumps = None
+        let num_steps = 1000
+      end)
 
   let ns = Ranker.rank g
-  let _ = Printf.printf "Testing RandomWalkRanker:\n NS: %s\n" 
-    (NS.string_of_node_score_map ns) 
+  let _ = Printf.printf "testing randomwalkranker:\n ns: %s\n" 
+      (NS.string_of_node_score_map ns)  
 
-(* That's the problem with randomness -- hard to test *)
+
+
+  (* that's the problem with randomness -- hard to test *)
 end
-*)
+
 
 
 (*
